@@ -1,13 +1,13 @@
 ---
 title: CarbonLens
 emoji: 📉
-colorFrom: emerald
-colorTo: cyan
+colorFrom: green
+colorTo: blue
 sdk: docker
 app_port: 7860
 pinned: false
 license: mit
-short_description: Immersive carbon tracking demo with route, meal, and daily CO2e reporting
+short_description: Immersive carbon tracker for food, travel, and CO2e
 ---
 
 # CarbonLens
