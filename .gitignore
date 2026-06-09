@@ -33,6 +33,3 @@ backend/__pycache__/
 /imag*.jpeg
 /vid*.mp4
 /Crown_of_Black_Iron.mp3
-
-# Temporarily excluded from the HF deploy branch because the single LFS upload stalls.
-/public/assets/toxic.riv
