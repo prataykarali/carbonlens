@@ -29,3 +29,7 @@ backend/.env
 backend/__pycache__/
 *.pyc
 
+# Local duplicate media copies kept outside the app bundle
+/imag*.jpeg
+/vid*.mp4
+/Crown_of_Black_Iron.mp3
