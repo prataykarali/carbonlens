@@ -18,21 +18,29 @@ The product goal is simple: remove carbon decision-blindness at the moment someo
 
 ## Screenshots
 
-![CarbonLens hero and scanner experience](./Screenshot%20from%202026-05-23%2016-33-36.png)
+![CarbonLens hero and scanner experience](./public/assets/readme/carbonlens-hero.png)
 
 The first screen opens straight into the cinematic product experience: scanner entry points, local media, and the CarbonLens decision framing.
 
-![Scanner preview](./public/assets/scanner_screen.png)
+![Scanner preview](./public/assets/readme/carbonlens-scan.png)
 
 The scanner view supports receipt uploads, webcam capture, barcode lookup, and manual natural-language entries.
 
-![Dashboard report mockup](./public/assets/dashboard_mockup.png)
+![Route planning view](./public/assets/readme/carbonlens-route.png)
+
+The route planner combines maps, transport mode, and trip context into a practical carbon estimate.
+
+![Dashboard report](./public/assets/readme/carbonlens-dashboard.png)
 
 The dashboard summarizes previous entries, daily targets, category totals, moving averages, and anonymous usage pulse data without exposing personal inputs.
 
-![Weekly Carbon Mirror](./public/assets/weekly_mirror.png)
+![Weekly Carbon Mirror](./public/assets/readme/carbonlens-weekly-mirror.png)
 
 The weekly mirror turns stored history into one practical swap instead of a generic lecture.
+
+![Toxic Rive scene](./public/assets/readme/carbonlens-toxic.png)
+
+The toxic Rive screen is included as part of the animated asset set used in the site.
 
 ## What It Does
 
