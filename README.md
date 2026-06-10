@@ -89,6 +89,8 @@ The challenge problem asks for awareness through simple actions and personalized
 - **Proof/audit readiness:** dashboard results can be converted into a Cairo-ready proof ID and category fingerprint without putting raw user inputs on-chain.
 - **Personalized action readiness:** every scan or log can become a short challenge that tells the user what to change, why it matters, and how much CO2e it could save.
 
+For the full Challenge 3 scoring map, see [docs/EVALUATION_READINESS.md](docs/EVALUATION_READINESS.md).
+
 ## Privacy Model
 
 CarbonLens is intentionally privacy-light.
@@ -193,6 +195,7 @@ backend/usage.py            Privacy-safe aggregate analytics logic
 backend/main.py             Optional FastAPI API
 contracts/                  Optional Starknet/Cairo impact proof reference
 docs/IMPACT_PROOF.md        Privacy-preserving proof design
+docs/EVALUATION_READINESS.md Challenge 3 feature and scoring map
 server.mjs                  Static Space server with API fallbacks
 public/assets/              Local videos, images, Rive files, and audio
 ```
