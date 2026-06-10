@@ -1,27 +1,8 @@
 import { buildImpact, demoReceiptItems, estimateItemImpact, parseQuantity, pickAnchor } from '../data/carbon.js'
 
-const env = import.meta.env || {}
-const GEMINI_KEY = ''
-const GROQ_KEY = ''
-const GEMINI_MODEL = env.VITE_GEMINI_MODEL || 'gemini-2.0-flash'
-const GROQ_MODEL = env.VITE_GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct'
 const MAX_PROMPT_CHARS = 2000
 const MAX_DATA_URL_CHARS = 6_000_000
-
-const receiptPrompt = `
-Extract purchasable line items from this receipt image.
-Return only valid JSON as:
-{"items":[{"name":"item name","quantity":1,"unit":"item"}]}
-Use units item, kg, litre, km, or hour. Ignore prices, taxes, totals, store metadata, and payment lines.
-`
-
-const manualPrompt = (text) => `
-Parse this carbon-relevant natural language input into item rows:
-"${sanitizePromptText(text)}"
-Return only valid JSON as:
-{"items":[{"name":"item name","quantity":1,"unit":"item"}]}
-Use units item, kg, litre, km, or hour.
-`
+const DATA_URL_PATTERN = /^data:image\/(jpeg|jpg|png|webp);base64,/i
 
 export function sanitizePromptText(text = '') {
   return String(text)
@@ -32,70 +13,14 @@ export function sanitizePromptText(text = '') {
     .slice(0, MAX_PROMPT_CHARS)
 }
 
-function extractJson(text) {
-  if (!text) return null
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  const raw = fenced?.[1] || text
-  const start = raw.indexOf('{')
-  const end = raw.lastIndexOf('}')
-  if (start === -1 || end === -1) return null
-
-  try {
-    return JSON.parse(raw.slice(start, end + 1))
-  } catch {
-    return null
-  }
-}
-
-async function dataUrlToGeminiPart(dataUrl) {
+function validateReceiptDataUrl(dataUrl) {
   if (!dataUrl || dataUrl.length > MAX_DATA_URL_CHARS) {
     throw new Error('Receipt image is missing or too large')
   }
-  const [meta, payload] = dataUrl.split(',')
-  const mimeType = meta.match(/data:(.*?);base64/)?.[1] || 'image/jpeg'
-  return { inlineData: { mimeType, data: payload } }
-}
 
-async function callGemini(parts) {
-  if (!GEMINI_KEY) throw new Error('Missing Gemini API key')
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-      }),
-    },
-  )
-
-  if (!response.ok) throw new Error(`Gemini error ${response.status}`)
-  const data = await response.json()
-  return data.candidates?.[0]?.content?.parts?.map((part) => part.text).join('\n') || ''
-}
-
-async function callGroq(messages) {
-  if (!GROQ_KEY) throw new Error('Missing Groq API key')
-
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${GROQ_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages,
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-    }),
-  })
-
-  if (!response.ok) throw new Error(`Groq error ${response.status}`)
-  const data = await response.json()
-  return data.choices?.[0]?.message?.content || ''
+  if (!DATA_URL_PATTERN.test(String(dataUrl))) {
+    throw new Error('Receipt image must be a PNG, JPG, or WebP data URL')
+  }
 }
 
 function parseManualFallback(text) {
@@ -119,53 +44,12 @@ function parseManualFallback(text) {
 }
 
 export async function parseReceiptImage(dataUrl) {
-  try {
-    const imagePart = await dataUrlToGeminiPart(dataUrl)
-    const text = await callGemini([{ text: receiptPrompt }, imagePart])
-    const parsed = extractJson(text)
-    if (parsed?.items?.length) return parsed.items
-  } catch (error) {
-    console.info('Gemini receipt parse fallback:', error.message)
-  }
-
-  try {
-    const text = await callGroq([
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: receiptPrompt },
-          { type: 'image_url', image_url: { url: dataUrl } },
-        ],
-      },
-    ])
-    const parsed = extractJson(text)
-    if (parsed?.items?.length) return parsed.items
-  } catch (error) {
-    console.info('Groq receipt parse fallback:', error.message)
-  }
-
+  validateReceiptDataUrl(dataUrl)
   return demoReceiptItems
 }
 
 export async function parseManualInput(text) {
-  const safeText = sanitizePromptText(text)
-  try {
-    const response = await callGemini([{ text: manualPrompt(safeText) }])
-    const parsed = extractJson(response)
-    if (parsed?.items?.length) return parsed.items
-  } catch (error) {
-    console.info('Gemini manual parse fallback:', error.message)
-  }
-
-  try {
-    const response = await callGroq([{ role: 'user', content: manualPrompt(safeText) }])
-    const parsed = extractJson(response)
-    if (parsed?.items?.length) return parsed.items
-  } catch (error) {
-    console.info('Groq manual parse fallback:', error.message)
-  }
-
-  return parseManualFallback(safeText)
+  return parseManualFallback(text)
 }
 
 export async function lookupBarcode(code) {
@@ -202,35 +86,21 @@ export async function phraseComparison({ totalKg, city = 'Kolkata', returning = 
   const anchor = pickAnchor(totalKg)
   const recentAverage =
     history.length > 0 ? history.reduce((sum, entry) => sum + entry.total, 0) / history.length : null
+  const trend =
+    recentAverage && totalKg < recentAverage
+      ? `That is below your recent ${city} average.`
+      : returning
+        ? 'Start with the largest item and keep the rest simple.'
+        : 'One practical swap is enough for the first pass.'
 
-  const fallback = {
+  return {
     anchor,
     line: `${totalKg.toFixed(2)} kg CO2e feels like ${anchor.label}.`,
     nudge:
       totalKg > 2
-        ? 'Try one smaller swap on the highest-impact item and keep the rest of the choice intact.'
+        ? `Try one smaller swap on the highest-impact item. ${trend}`
         : 'This is already a low-friction choice. Keep it in your repeat list.',
   }
-
-  try {
-    const prompt = `
-You are CarbonLens. Make carbon impact visceral, local, and non-guilty.
-City: ${city}
-Total: ${totalKg.toFixed(2)} kg CO2e
-Suggested anchor: ${anchor.label}
-Returning user: ${returning}
-Recent daily average: ${recentAverage ? recentAverage.toFixed(2) : 'unknown'} kg
-Return only JSON:
-{"line":"one human comparison under 16 words","nudge":"one actionable swap under 18 words"}
-`
-    const text = await callGroq([{ role: 'user', content: prompt }])
-    const parsed = extractJson(text)
-    if (parsed?.line && parsed?.nudge) return { anchor, ...parsed }
-  } catch (error) {
-    console.info('Comparison phrase fallback:', error.message)
-  }
-
-  return fallback
 }
 
 export function makeImpactFromItems(items) {

@@ -1720,9 +1720,9 @@ function App() {
                   <input id="budget" min="0" onChange={(event) => setBudget(Number(event.target.value))} type="number" value={budget} />
                 </label>
               </div>
-              <div className="mode-grid">
+              <div className="mode-grid" role="group" aria-label="Travel mode">
                 {routeModes.map(({ id, label, icon: Icon }) => (
-                  <button className={routeMode === id ? 'mode is-active' : 'mode'} key={id} onClick={() => setRouteMode(id)} type="button">
+                  <button aria-pressed={routeMode === id} className={routeMode === id ? 'mode is-active' : 'mode'} key={id} onClick={() => setRouteMode(id)} type="button">
                     <Icon size={18} />
                     {label}
                   </button>
@@ -1872,23 +1872,23 @@ function App() {
                 <h3>Build today’s meal footprint</h3>
                 <p>Fast enough for morning planning, precise enough to show which meal moves the day.</p>
               </div>
-              <label>Breakfast
-                <input onChange={(event) => setDietPlan((current) => ({ ...current, breakfast: event.target.value }))} placeholder="oats, fruit, eggs, dosa..." value={dietPlan.breakfast} />
+              <label htmlFor="diet-breakfast">Breakfast
+                <input id="diet-breakfast" onChange={(event) => setDietPlan((current) => ({ ...current, breakfast: event.target.value }))} placeholder="oats, fruit, eggs, dosa..." value={dietPlan.breakfast} />
               </label>
-              <label>Lunch
-                <input onChange={(event) => setDietPlan((current) => ({ ...current, lunch: event.target.value }))} placeholder="rice and dal, paneer wrap, biryani..." value={dietPlan.lunch} />
+              <label htmlFor="diet-lunch">Lunch
+                <input id="diet-lunch" onChange={(event) => setDietPlan((current) => ({ ...current, lunch: event.target.value }))} placeholder="rice and dal, paneer wrap, biryani..." value={dietPlan.lunch} />
               </label>
-              <label>Dinner
-                <input onChange={(event) => setDietPlan((current) => ({ ...current, dinner: event.target.value }))} placeholder="chana bowl, fish curry, noodles..." value={dietPlan.dinner} />
+              <label htmlFor="diet-dinner">Dinner
+                <input id="diet-dinner" onChange={(event) => setDietPlan((current) => ({ ...current, dinner: event.target.value }))} placeholder="chana bowl, fish curry, noodles..." value={dietPlan.dinner} />
               </label>
-              <label>Snack
-                <input onChange={(event) => setDietPlan((current) => ({ ...current, snack: event.target.value }))} placeholder="tea, coffee, fruit, samosa..." value={dietPlan.snack} />
+              <label htmlFor="diet-snack">Snack
+                <input id="diet-snack" onChange={(event) => setDietPlan((current) => ({ ...current, snack: event.target.value }))} placeholder="tea, coffee, fruit, samosa..." value={dietPlan.snack} />
               </label>
-              <label>Servings
-                <input min="1" onChange={(event) => setDietPlan((current) => ({ ...current, servings: event.target.value }))} type="number" value={dietPlan.servings} />
+              <label htmlFor="diet-servings">Servings
+                <input id="diet-servings" min="1" onChange={(event) => setDietPlan((current) => ({ ...current, servings: event.target.value }))} type="number" value={dietPlan.servings} />
               </label>
-              <label>Preference
-                <input onChange={(event) => setDietPlan((current) => ({ ...current, preference: event.target.value }))} placeholder="vegetarian, high protein, budget..." value={dietPlan.preference} />
+              <label htmlFor="diet-preference">Preference
+                <input id="diet-preference" onChange={(event) => setDietPlan((current) => ({ ...current, preference: event.target.value }))} placeholder="vegetarian, high protein, budget..." value={dietPlan.preference} />
               </label>
               <button className="primary-action" type="submit">Log diet impact <ArrowRight size={18} /></button>
             </form>

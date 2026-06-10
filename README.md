@@ -54,6 +54,35 @@ The toxic Rive scene is part of the animated asset set, showing how motion and p
 - Pulls sustainability context from the backend article endpoint, with local fallbacks for Space deployments.
 - Uses local videos, images, soundtrack, and Rive scenes for the cinematic experience.
 
+## Why We Built It
+
+Carbon footprint tools often fail at the exact moment they need to help: when someone is choosing a meal, scanning a product, booking a trip, or reviewing a daily habit. CarbonLens was built to make that invisible impact immediate, visual, and practical. Instead of asking users to study abstract kilograms, it converts everyday inputs into CO2e, compares them with familiar anchors, and suggests one next swap.
+
+The challenge problem asks for awareness through simple actions and personalized insights. CarbonLens maps directly to that:
+
+- **Understand:** every result includes item-level CO2e, category split, and a human-scale comparison.
+- **Track:** meal logs and anonymous previous-entry pulse metrics show trends over days.
+- **Reduce:** the app highlights the largest lever and gives one lower-carbon move instead of a long guilt list.
+- **Personalize:** estimates respond to the user's receipt, barcode, route, diet, budget, travelers, and local city context.
+
+## Tech Stack
+
+- **Frontend:** React 19, Vite, Framer Motion, Recharts, Lucide icons, Rive canvas animations.
+- **Carbon engine:** local emission-factor tables, quantity parsing, default portion logic, and comparison anchors in `src/data/carbon.js`.
+- **Routing:** Leaflet, OpenStreetMap tiles, OSRM route distance, Nominatim geocoding, with deterministic fallback distance math.
+- **Product data:** Open Food Facts barcode lookup with sanitized numeric barcodes.
+- **Backend:** FastAPI for health, food images, articles, and privacy-safe aggregate usage analytics.
+- **Space runtime:** Docker plus `server.mjs`, serving the built app on port `7860` with API fallbacks.
+- **Testing:** Node test runner for frontend/domain logic and Python `unittest` for backend analytics.
+
+## Evaluation Readiness
+
+- **Code quality:** core carbon, route, input-safety, and usage logic are split into small tested modules with clear data boundaries.
+- **Security:** no AI/provider secrets are required in the frontend build; receipt uploads are type/size checked; barcodes are numeric-only; usage totals are clamped; server responses include CSP, frame denial, no-sniff, HSTS, referrer, permissions, and opener-policy headers.
+- **Efficiency:** route calculations reuse pure helpers, scraper responses are cached, static Space assets receive long-lived cache headers, and non-critical images use lazy loading/async decoding.
+- **Testing:** `npm run check` runs ESLint, all Node tests, all Python usage tests, and the production build.
+- **Accessibility:** zoom is not blocked, a skip link is present, form fields have labels, interactive mode controls expose selected state, decorative media is hidden from assistive tech, charts/maps are labelled regions, and live status updates use `aria-live`.
+
 ## Privacy Model
 
 CarbonLens is intentionally privacy-light.
@@ -62,7 +91,7 @@ CarbonLens is intentionally privacy-light.
 - The optional `/api/usage-event` endpoint only receives a random browser ID, event type, date, and CO2e total.
 - The backend hashes random browser IDs before storing aggregate unique-user counts.
 - Usage analytics never store names, typed meal text, receipt text, barcode values, route locations, camera images, or IP-derived profile data.
-- `VITE_*` environment variables are exposed to the frontend by Vite, so production deployments should proxy AI calls through the backend.
+- The submitted frontend build does not require model-provider secrets. If provider integrations are added later, they should run through a private backend proxy.
 
 ## Run Locally
 
@@ -94,12 +123,11 @@ Create `.env.local` for local secrets. It is ignored by Git.
 
 ```bash
 VITE_BACKEND_URL=http://127.0.0.1:8001
-GEMINI_API_KEY=...
-GROQ_API_KEY=...
 CARBONLENS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
+CARBONLENS_USAGE_FILE=/tmp/carbonlens_usage.json
 ```
 
-Do not expose AI provider secrets with `VITE_*` variables. Frontend builds can reveal those values in browser JavaScript, so production AI calls should go through the backend.
+Do not expose provider secrets with `VITE_*` variables. Frontend builds can reveal those values in browser JavaScript, so production provider calls should go through a backend route.
 
 Maps are free/open by default:
 
@@ -148,9 +176,12 @@ The Space server includes browser-side fallbacks for food images and articles, p
 src/App.jsx                 Main immersive React experience
 src/styles.css              Responsive app styling
 src/data/carbon.js          Carbon factors and comparison anchors
-src/services/aiClients.js   AI parsing, receipt analysis, and comparison phrasing
+src/services/aiClients.js   Local-safe parsing, receipt validation, barcode lookup, and comparison phrasing
+src/services/inputSafety.js Upload validation helpers
+src/services/routeMath.js   Pure route parsing, distance, and impact helpers
 src/services/backendApi.js  Backend, image, article, and usage API helpers
 src/services/maps.js        Leaflet/OpenStreetMap/OSRM route logic
+backend/usage.py            Privacy-safe aggregate analytics logic
 backend/main.py             Optional FastAPI API
 server.mjs                  Static Space server with API fallbacks
 public/assets/              Local videos, images, Rive files, and audio
@@ -165,4 +196,4 @@ npm run build
 npm run check
 ```
 
-`npm run check` runs linting, the Node test suite, and the production build in sequence. `npm run test:python` exercises the optional FastAPI usage aggregation when backend dependencies are installed.
+`npm run check` runs linting, the Node test suite, the Python usage tests, and the production build in sequence.

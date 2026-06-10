@@ -70,7 +70,7 @@ export function renderOpenRouteMap({ mapElement }) {
 
   if (mapElement._leaflet_id) {
     mapElement._leaflet_id = null
-    mapElement.innerHTML = ''
+    mapElement.replaceChildren()
   }
 
   const map = L.map(mapElement, {
