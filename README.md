@@ -18,27 +18,27 @@ The product goal is simple: remove carbon decision-blindness at the moment someo
 
 ## Screenshots
 
-![CarbonLens hero view with scanner entry points](https://github.com/prataykarali/carbonlens/blob/main/public/assets/readme/carbonlens-hero.png?raw=1)
+![CarbonLens hero view with scanner entry points](./public/assets/readme/carbonlens-hero.png)
 
 The landing screen sets the tone immediately: a cinematic hero, clear scanner entry points, and the decision framing that makes CarbonLens feel like a product rather than a form.
 
-![Receipt scanner and manual entry flow](https://github.com/prataykarali/carbonlens/blob/main/public/assets/readme/carbonlens-scan.png?raw=1)
+![Receipt scanner and manual entry flow](./public/assets/readme/carbonlens-scan.png)
 
 The scanner view handles receipt uploads, webcam capture, barcode lookup, and natural-language entry in one flow, so users can start from whatever data they already have.
 
-![Route planning and travel impact view](https://github.com/prataykarali/carbonlens/blob/main/public/assets/readme/carbonlens-route.png?raw=1)
+![Route planning and travel impact view](./public/assets/readme/carbonlens-route.png)
 
 The route planner combines map data, transport mode, trip length, and travel context into a practical carbon estimate that is easier to act on than a raw number.
 
-![Dashboard report with trends and totals](https://github.com/prataykarali/carbonlens/blob/main/public/assets/readme/carbonlens-dashboard.png?raw=1)
+![Dashboard report with trends and totals](./public/assets/readme/carbonlens-dashboard.png)
 
 The dashboard turns prior entries into a readable performance view with totals, category splits, moving averages, and target gaps without exposing personal inputs.
 
-![Weekly Carbon Mirror summary](https://github.com/prataykarali/carbonlens/blob/main/public/assets/readme/carbonlens-weekly-mirror.png?raw=1)
+![Weekly Carbon Mirror summary](./public/assets/readme/carbonlens-weekly-mirror.png)
 
 The weekly mirror turns stored history into one concrete swap for the next week, which keeps the feedback specific and usable.
 
-![Toxic Rive scene and animated asset sample](https://github.com/prataykarali/carbonlens/blob/main/public/assets/readme/carbonlens-toxic.png?raw=1)
+![Toxic Rive scene and animated asset sample](./public/assets/readme/carbonlens-toxic.png)
 
 The toxic Rive scene is part of the animated asset set, showing how motion and playful visual feedback are used throughout the site.
 
