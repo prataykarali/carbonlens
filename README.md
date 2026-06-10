@@ -18,29 +18,29 @@ The product goal is simple: remove carbon decision-blindness at the moment someo
 
 ## Screenshots
 
-![CarbonLens hero and scanner experience](./public/assets/readme/carbonlens-hero.png)
+![CarbonLens hero view with scanner entry points](https://raw.githubusercontent.com/prataykarali/carbonlens/main/public/assets/readme/carbonlens-hero.png)
 
-The first screen opens straight into the cinematic product experience: scanner entry points, local media, and the CarbonLens decision framing.
+The landing screen sets the tone immediately: a cinematic hero, clear scanner entry points, and the decision framing that makes CarbonLens feel like a product rather than a form.
 
-![Scanner preview](./public/assets/readme/carbonlens-scan.png)
+![Receipt scanner and manual entry flow](https://raw.githubusercontent.com/prataykarali/carbonlens/main/public/assets/readme/carbonlens-scan.png)
 
-The scanner view supports receipt uploads, webcam capture, barcode lookup, and manual natural-language entries.
+The scanner view handles receipt uploads, webcam capture, barcode lookup, and natural-language entry in one flow, so users can start from whatever data they already have.
 
-![Route planning view](./public/assets/readme/carbonlens-route.png)
+![Route planning and travel impact view](https://raw.githubusercontent.com/prataykarali/carbonlens/main/public/assets/readme/carbonlens-route.png)
 
-The route planner combines maps, transport mode, and trip context into a practical carbon estimate.
+The route planner combines map data, transport mode, trip length, and travel context into a practical carbon estimate that is easier to act on than a raw number.
 
-![Dashboard report](./public/assets/readme/carbonlens-dashboard.png)
+![Dashboard report with trends and totals](https://raw.githubusercontent.com/prataykarali/carbonlens/main/public/assets/readme/carbonlens-dashboard.png)
 
-The dashboard summarizes previous entries, daily targets, category totals, moving averages, and anonymous usage pulse data without exposing personal inputs.
+The dashboard turns prior entries into a readable performance view with totals, category splits, moving averages, and target gaps without exposing personal inputs.
 
-![Weekly Carbon Mirror](./public/assets/readme/carbonlens-weekly-mirror.png)
+![Weekly Carbon Mirror summary](https://raw.githubusercontent.com/prataykarali/carbonlens/main/public/assets/readme/carbonlens-weekly-mirror.png)
 
-The weekly mirror turns stored history into one practical swap instead of a generic lecture.
+The weekly mirror turns stored history into one concrete swap for the next week, which keeps the feedback specific and usable.
 
-![Toxic Rive scene](./public/assets/readme/carbonlens-toxic.png)
+![Toxic Rive scene and animated asset sample](https://raw.githubusercontent.com/prataykarali/carbonlens/main/public/assets/readme/carbonlens-toxic.png)
 
-The toxic Rive screen is included as part of the animated asset set used in the site.
+The toxic Rive scene is part of the animated asset set, showing how motion and playful visual feedback are used throughout the site.
 
 ## What It Does
 
