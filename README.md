@@ -49,6 +49,7 @@ The toxic Rive scene is part of the animated asset set, showing how motion and p
 - Accepts plain-language manual input such as `2 samosas, 1 Uber 8km, 500g paneer`.
 - Plans routes with Leaflet, OpenStreetMap, OSRM, and Nominatim, including transport mode, congestion strategy, travel food, budget, and traveler count.
 - Logs daily meals into a local food database and builds a true day-by-day report from previous entries.
+- Generates a personal 3-day reduction plan with the highest-impact item, target gap, best-day repeat action, and estimated weekly savings.
 - Shows category breakdowns, moving averages, target gaps, best days, and 30-day projections.
 - Tracks anonymous usage pulse metrics such as unique browser count, visits, saved actions, and active days.
 - Pulls sustainability context from the backend article endpoint, with local fallbacks for Space deployments.
@@ -64,11 +65,13 @@ The challenge problem asks for awareness through simple actions and personalized
 - **Track:** meal logs and anonymous previous-entry pulse metrics show trends over days.
 - **Reduce:** the app highlights the largest lever and gives one lower-carbon move instead of a long guilt list.
 - **Personalize:** estimates respond to the user's receipt, barcode, route, diet, budget, travelers, and local city context.
+- **Act:** the dashboard converts each result into a 3-day challenge with concrete actions and measurable savings.
 
 ## Tech Stack
 
 - **Frontend:** React 19, Vite, Framer Motion, Recharts, Lucide icons, Rive canvas animations.
 - **Carbon engine:** local emission-factor tables, quantity parsing, default portion logic, and comparison anchors in `src/data/carbon.js`.
+- **Reduction engine:** deterministic action-plan logic in `src/services/reductionPlan.js`, converting totals, history, budget, and city context into next steps.
 - **Routing:** Leaflet, OpenStreetMap tiles, OSRM route distance, Nominatim geocoding, with deterministic fallback distance math.
 - **Product data:** Open Food Facts barcode lookup with sanitized numeric barcodes.
 - **Backend:** FastAPI for health, food images, articles, and privacy-safe aggregate usage analytics.
@@ -84,6 +87,7 @@ The challenge problem asks for awareness through simple actions and personalized
 - **Testing:** `npm run check` runs ESLint, all Node tests, all Python usage tests, and the production build.
 - **Accessibility:** zoom is not blocked, a skip link is present, form fields have labels, interactive mode controls expose selected state, decorative media is hidden from assistive tech, charts/maps are labelled regions, and live status updates use `aria-live`.
 - **Proof/audit readiness:** dashboard results can be converted into a Cairo-ready proof ID and category fingerprint without putting raw user inputs on-chain.
+- **Personalized action readiness:** every scan or log can become a short challenge that tells the user what to change, why it matters, and how much CO2e it could save.
 
 ## Privacy Model
 
@@ -181,6 +185,7 @@ src/data/carbon.js          Carbon factors and comparison anchors
 src/services/aiClients.js   Local-safe parsing, receipt validation, barcode lookup, and comparison phrasing
 src/services/inputSafety.js Upload validation helpers
 src/services/impactProof.js  Cairo-ready impact proof generation
+src/services/reductionPlan.js Personalized 3-day action planning
 src/services/routeMath.js   Pure route parsing, distance, and impact helpers
 src/services/backendApi.js  Backend, image, article, and usage API helpers
 src/services/maps.js        Leaflet/OpenStreetMap/OSRM route logic

@@ -2699,6 +2699,64 @@ textarea:focus {
   line-height: 1.5;
 }
 
+.reduction-plan-panel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(45, 212, 191, 0.2);
+  border-radius: 8px;
+  padding: clamp(16px, 2vw, 22px);
+  background:
+    linear-gradient(135deg, rgba(45, 212, 191, 0.12), rgba(9, 18, 15, 0.78)),
+    rgba(9, 18, 15, 0.76);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.plan-hero-row,
+.plan-action-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.plan-hero-row {
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+}
+
+.plan-action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.plan-hero-row > div,
+.plan-action-grid article {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.plan-hero-row span,
+.plan-action-grid span {
+  color: rgba(156, 255, 221, 0.8);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plan-hero-row strong,
+.plan-action-grid strong {
+  display: block;
+  margin: 6px 0 8px;
+  color: #fff;
+  font-size: clamp(1rem, 1.5vw, 1.32rem);
+  line-height: 1.15;
+}
+
+.reduction-plan-panel p {
+  margin: 0;
+  color: rgba(247, 255, 249, 0.72);
+  line-height: 1.5;
+}
+
 .proof-ledger {
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) minmax(280px, 1.05fr);
@@ -2920,6 +2978,8 @@ textarea:focus {
   .route-intel,
   .insight-metrics,
   .privacy-metric-grid,
+  .plan-hero-row,
+  .plan-action-grid,
   .proof-ledger,
   .daily-diet-panel,
   .budget-panel {

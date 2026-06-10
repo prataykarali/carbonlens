@@ -66,6 +66,7 @@ import { fetchArticles, fetchFoodImage, recordUsageEvent } from './services/back
 import { createImpactProof } from './services/impactProof'
 import { validateReceiptFileMeta } from './services/inputSafety'
 import { calculateRouteImpact, estimateRouteDistance, renderOpenRouteMap } from './services/maps'
+import { buildReductionPlan } from './services/reductionPlan'
 
 const storageKey = 'carbonlens-session-v2'
 const analyticsKey = 'carbonlens-privacy-metrics-v1'
@@ -1043,6 +1044,10 @@ function App() {
     weeklyAverage <= carbonBudget
       ? `You are ${formatKg(carbonBudget - weeklyAverage)} kg under your daily target on average.`
       : `Cut ${formatKg(weeklyAverage - carbonBudget)} kg per day to meet your target.`
+  const reductionPlan = useMemo(
+    () => buildReductionPlan({ impact, history: reportSeries, carbonBudget, city: session.city }),
+    [impact, reportSeries, carbonBudget, session.city],
+  )
 
   const weeklyMirror = useMemo(() => {
     const history = session.history
@@ -2083,6 +2088,33 @@ function App() {
                   </div>
                 ))}
                 {!latestFoodLog && <p>No individual meal records yet. Log today’s diet to generate the first report.</p>}
+              </div>
+            </div>
+            <div className="reduction-plan-panel wide" role="region" aria-label="Personalized carbon reduction plan">
+              <div className="panel-title chart-title-row">
+                <div><Leaf size={20} /><h3>Personal 3-day reduction plan</h3></div>
+                <span>{formatKg(reductionPlan.projectedWeekSavings)} kg potential weekly saving</span>
+              </div>
+              <div className="plan-hero-row">
+                <div>
+                  <span>{reductionPlan.challenge}</span>
+                  <strong>{reductionPlan.headline}</strong>
+                  <p>{reductionPlan.cityContext}</p>
+                </div>
+                <div>
+                  <span>Target gap</span>
+                  <strong>{formatKg(reductionPlan.dailyGap)} kg/day</strong>
+                  <p>{reductionPlan.weeklyAverage ? `${formatKg(reductionPlan.weeklyAverage)} kg recent average vs ${formatKg(carbonBudget)} kg target.` : 'Log entries to compare against your own baseline.'}</p>
+                </div>
+              </div>
+              <div className="plan-action-grid">
+                {reductionPlan.actions.map((action) => (
+                  <article key={action.label}>
+                    <span>{action.label}</span>
+                    <strong>{action.title}</strong>
+                    <p>{action.detail}</p>
+                  </article>
+                ))}
               </div>
             </div>
             <div className="chart-panel wide dashboard-total-chart" role="region" aria-label="Seven day food CO2e chart">
