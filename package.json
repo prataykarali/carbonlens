@@ -1,5 +1,5 @@
 {
-  "name": "temp-vite-scaffold",
+  "name": "carbonlens",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,6 +8,9 @@
     "backend": "cd backend && ./venv/bin/uvicorn main:app --host 127.0.0.1 --port 8001",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test tests/*.test.mjs",
+    "test:python": "python3 -m unittest discover -s tests -p 'test_*.py'",
+    "check": "npm run lint && npm test && npm run test:python && npm run build",
     "preview": "vite preview",
     "space": "node server.mjs"
   },

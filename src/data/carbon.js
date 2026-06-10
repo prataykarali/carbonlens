@@ -103,25 +103,36 @@ export function normalizeItemName(name = '') {
 
 export function parseQuantity(text = '') {
   const lower = text.toLowerCase()
-  const number = Number((lower.match(/(\d+(?:\.\d+)?)/) || [])[1] || 1)
+  const match = lower.match(/(\d+(?:\.\d+)?)/)
+  const number = Number(match?.[1] || 1)
+  const explicit = Boolean(match)
 
-  if (lower.includes('kg')) return { quantity: number, unit: 'kg' }
-  if (lower.includes('g')) return { quantity: number / 1000, unit: 'kg' }
-  if (lower.includes('km')) return { quantity: number, unit: 'km' }
-  if (lower.includes('hour') || lower.includes('hr')) return { quantity: number, unit: 'hour' }
-  if (lower.includes('litre') || lower.includes('liter') || lower.includes('l ')) {
-    return { quantity: number, unit: 'litre' }
+  if (/\bkg\b/.test(lower)) return { quantity: number, unit: 'kg', explicit }
+  if (/\d\s*g\b|\bgrams?\b/.test(lower)) return { quantity: number / 1000, unit: 'kg', explicit }
+  if (/\d\s*km\b|\bkilometers?\b|\bkilometres?\b/.test(lower)) return { quantity: number, unit: 'km', explicit }
+  if (/\bhours?\b|\bhrs?\b/.test(lower)) return { quantity: number, unit: 'hour', explicit }
+  if (/\blitres?\b|\bliters?\b|\d\s*l\b/.test(lower)) {
+    return { quantity: number, unit: 'litre', explicit }
   }
 
-  return { quantity: number, unit: 'item' }
+  return { quantity: number, unit: 'item', explicit }
+}
+
+function defaultQuantityForFactor(factor, fallbackUnit) {
+  if (!factor) return 1
+  if (fallbackUnit === 'kg' || factor.kgPerKg) return factor.defaultKg || 1
+  if (fallbackUnit === 'litre' || factor.kgPerLitre) return factor.defaultLitre || 1
+  if (fallbackUnit === 'km' || factor.kgPerKm) return factor.defaultKm || 1
+  if (fallbackUnit === 'hour' || factor.kgPerHour) return factor.defaultHour || 1
+  return 1
 }
 
 export function estimateItemImpact(rawItem) {
   const name = normalizeItemName(rawItem.name || rawItem.text || '')
   const factor = fallbackFactors.find((entry) => entry.match.some((needle) => name.includes(needle)))
   const parsed = parseQuantity(`${rawItem.quantity || ''} ${rawItem.unit || ''} ${rawItem.name || rawItem.text || ''}`)
-  const quantity = Number(rawItem.quantity) || parsed.quantity || 1
-  const unit = rawItem.unit || parsed.unit
+  const unit = rawItem.unit || (parsed.explicit ? parsed.unit : factor?.unit || parsed.unit)
+  const quantity = Number(rawItem.quantity) || (parsed.explicit ? parsed.quantity : defaultQuantityForFactor(factor, unit)) || 1
 
   if (!factor) {
     return {

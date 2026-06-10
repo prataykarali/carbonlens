@@ -77,6 +77,25 @@ h3 {
   overflow-x: hidden;
 }
 
+.skip-link {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  transform: translateY(-140%);
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #f7fff9;
+  color: #07120f;
+  font-weight: 900;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  transition: transform 0.18s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .scroll-progress {
   position: fixed;
   top: 0;

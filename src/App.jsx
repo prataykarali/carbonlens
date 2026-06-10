@@ -63,6 +63,7 @@ import {
 import { categoryColors, estimateItemImpact, parseQuantity, pickAnchor } from './data/carbon'
 import { lookupBarcode, makeImpactFromItems, parseManualInput, parseReceiptImage, phraseComparison } from './services/aiClients'
 import { fetchArticles, fetchFoodImage, recordUsageEvent } from './services/backendApi'
+import { validateReceiptFileMeta } from './services/inputSafety'
 import { calculateRouteImpact, estimateRouteDistance, renderOpenRouteMap } from './services/maps'
 
 const storageKey = 'carbonlens-session-v2'
@@ -172,7 +173,7 @@ function AmbientRive({ src, label, icon: Icon, tone, compact = false }) {
 
   return (
     <div className={`ambient-rive ambient-rive-${tone} ${compact ? 'is-compact' : ''}`}>
-      <div className="ambient-rive-stage">
+      <div aria-label={`${label} Rive animation`} className="ambient-rive-stage" role="img">
         {src ? <RiveComponent /> : null}
         <div className="ambient-rive-fallback"><Icon size={18} /></div>
       </div>
@@ -213,7 +214,7 @@ function ToxicRiveScene({ item }) {
   }, [rive])
 
   return (
-    <div className="toxic-rive-native" aria-label="Interactive toxic Rive scene">
+    <div className="toxic-rive-native" aria-label="Interactive toxic Rive scene" role="img">
       <RiveComponent />
     </div>
   )
@@ -766,6 +767,21 @@ function App() {
   const didTrackVisitRef = useRef(false)
 
   useEffect(() => {
+    const shotTarget = new URLSearchParams(window.location.search).get('shot')
+    if (!shotTarget) return
+
+    const timer = window.setTimeout(() => {
+      if (shotTarget === 'toxic') {
+        document.querySelector('.rive-fullscreen-tile.tone-toxic')?.scrollIntoView({ behavior: 'auto', block: 'center' })
+      } else {
+        scrollTo(shotTarget)
+      }
+    }, 600)
+
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify({ city: session.city, history: session.history, foodLogs: session.foodLogs, returning: true }))
   }, [session])
 
@@ -1120,6 +1136,13 @@ function App() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    const validationError = validateReceiptFileMeta(file)
+    if (validationError) {
+      setStatus(validationError)
+      event.target.value = ''
+      return
+    }
+
     setIsBusy(true)
     setStatus('Reading receipt image...')
     try {
@@ -1419,9 +1442,10 @@ function App() {
 
   return (
     <div className="app-shell">
-      <motion.div className="scroll-progress" style={{ scaleX }} />
+      <a className="skip-link" href="#main-content">Skip to CarbonLens app</a>
+      <motion.div aria-hidden="true" className="scroll-progress" style={{ scaleX }} />
       <header className="topbar glass">
-        <button className="brand" onClick={() => scrollTo('home')} type="button">
+        <button aria-label="Go to CarbonLens home" className="brand" onClick={() => scrollTo('home')} type="button">
           <span className="brand-mark"><img src="/favicon.svg?v=3" alt="" aria-hidden="true" /></span>
           <span>CarbonLens</span>
         </button>
@@ -1430,18 +1454,18 @@ function App() {
             <button key={item.id} onClick={() => scrollTo(item.id)} type="button">{item.label}</button>
           ))}
         </nav>
-        <button className="audio-toggle" onClick={isMusicOn ? stopAmbient : startAmbient} type="button">
+        <button aria-pressed={isMusicOn} className="audio-toggle" onClick={isMusicOn ? stopAmbient : startAmbient} type="button">
           {isMusicOn ? <Pause size={16} /> : <Play size={16} />}
           Crown of Black
         </button>
       </header>
 
-      <main>
+      <main id="main-content">
         <section id="home" className="hero cinematic">
-          <video className="hero-video" src="/assets/vid1.mp4" autoPlay muted loop playsInline />
-          <video className="hero-video hero-video-secondary" src="/assets/vid2.mp4" autoPlay muted loop playsInline />
-          <img className="hero-media soft-blend" src="/assets/hero_illustration.png" alt="Receipt under a magnifying glass with carbon annotations" />
-          <img className="hero-media hero-media-secondary" src="/assets/imag12.jpeg" alt="" aria-hidden="true" />
+          <video aria-hidden="true" className="hero-video" src="/assets/vid1.mp4" autoPlay muted loop playsInline />
+          <video aria-hidden="true" className="hero-video hero-video-secondary" src="/assets/vid2.mp4" autoPlay muted loop playsInline />
+          <img className="hero-media soft-blend" src="/assets/hero_illustration.png" alt="Receipt under a magnifying glass with carbon annotations" decoding="async" fetchPriority="high" />
+          <img className="hero-media hero-media-secondary" src="/assets/imag12.jpeg" alt="" aria-hidden="true" decoding="async" />
           <div className="hero-shade" />
           <motion.div className="hero-content reveal" style={{ y: heroLift }} initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }}>
             <p className="eyebrow">Immersive cinematic carbon tracking</p>
@@ -1459,11 +1483,11 @@ function App() {
               <span className="live-pill"><Zap size={16} /> Local-first. API-enhanced.</span>
             </div>
           </motion.div>
-          <ChevronDown className="scroll-cue" size={28} />
+          <ChevronDown aria-hidden="true" className="scroll-cue" size={28} />
         </section>
 
         <section className="summary-section premium-section" aria-label="CarbonLens section guide">
-          <video className="section-video" src="/assets/vid6.mp4" autoPlay muted loop playsInline />
+          <video aria-hidden="true" className="section-video" src="/assets/vid6.mp4" autoPlay muted loop playsInline />
           <img className="section-backdrop is-left is-tight" src="/assets/imag6.jpeg" alt="" aria-hidden="true" />
           <img className="section-backdrop is-right is-upper is-soft" src="/assets/imag11.jpeg" alt="" aria-hidden="true" />
           {sectionReady.summary ? (
@@ -1489,7 +1513,7 @@ function App() {
                   ))}
                 </div>
                 <figure className="summary-image">
-                  <img src="/assets/dashboard_mockup.png" alt="CarbonLens dashboard report preview" />
+                  <img src="/assets/dashboard_mockup.png" alt="CarbonLens dashboard report preview" loading="lazy" decoding="async" />
                   <figcaption>
                     <span>Local-first database</span>
                     <strong>Meal logs become daily CO2e reports.</strong>
@@ -1505,7 +1529,7 @@ function App() {
         <section id="scan" className="workspace-section scenic-section">
           {sectionReady.scan ? (
             <>
-              <video className="section-video" src={activeVideo} autoPlay muted loop playsInline />
+              <video aria-hidden="true" className="section-video" src={activeVideo} autoPlay muted loop playsInline />
               <img className="section-backdrop is-left is-soft" src="/assets/imag7.jpeg" alt="" aria-hidden="true" />
               <img className="section-backdrop is-right is-tight" src="/assets/imag1.jpeg" alt="" aria-hidden="true" />
               <div className="section-heading reveal">
@@ -1518,7 +1542,7 @@ function App() {
                 <div className="tool-panel glass-card">
                   <div className="segmented-control" role="tablist" aria-label="Carbon input method">
                     {scannerTabs.map(({ id, label, icon: Icon }) => (
-                      <button className={activeTool === id ? 'is-active' : ''} key={id} onClick={() => setActiveTool(id)} role="tab" type="button">
+                      <button aria-selected={activeTool === id} className={activeTool === id ? 'is-active' : ''} key={id} onClick={() => setActiveTool(id)} role="tab" type="button">
                         <Icon size={17} />
                         {label}
                       </button>
@@ -1535,7 +1559,7 @@ function App() {
                         </div>
                         <label className="file-button">
                           Choose image
-                          <input accept="image/*" onChange={handleReceiptFile} type="file" />
+                          <input accept="image/png,image/jpeg,image/webp" aria-label="Choose receipt image" onChange={handleReceiptFile} type="file" />
                         </label>
                       </div>
 
@@ -1554,7 +1578,7 @@ function App() {
                             </>
                           )}
                         </div>
-                        <video className={cameraOn ? 'camera-preview is-live' : 'camera-preview'} ref={videoRef} autoPlay muted playsInline />
+                        <video aria-label="Receipt camera preview" className={cameraOn ? 'camera-preview is-live' : 'camera-preview'} ref={videoRef} autoPlay muted playsInline />
                       </div>
                     </div>
                   )}
@@ -1583,11 +1607,11 @@ function App() {
                             <button className="ghost-action" onClick={stopBarcodeScanner} type="button">Stop</button>
                           )}
                         </div>
-                        <video className={barcodeScanning ? 'camera-preview is-live' : 'camera-preview'} ref={barcodeVideoRef} autoPlay muted playsInline />
+                        <video aria-label="Barcode camera preview" className={barcodeScanning ? 'camera-preview is-live' : 'camera-preview'} ref={barcodeVideoRef} autoPlay muted playsInline />
                       </div>
                       {lastProduct && (
                         <div className="product-strip">
-                          {lastProduct.image && <img src={lastProduct.image} alt="" />}
+                          {lastProduct.image && <img src={lastProduct.image} alt={`${lastProduct.name} package`} loading="lazy" decoding="async" />}
                           <div><strong>{lastProduct.name}</strong><span>{lastProduct.brand}</span></div>
                         </div>
                       )}
@@ -1635,20 +1659,11 @@ function App() {
             <p>These Rive scenes are now a dedicated fullscreen section. Type, scan, and feel the shift.</p>
           </motion.div>
 
-          <div className="rive-fullscreen-grid reveal" aria-hidden="false">
+          <div className="rive-fullscreen-grid reveal">
             {riveShowcaseItems.map((item, index) => (
               <motion.section
-                className={`rive-fullscreen-tile tone-${item.tone} ${item.actionTarget && item.tone !== 'toxic' ? 'is-clickable' : ''}`}
+                className={`rive-fullscreen-tile tone-${item.tone}`}
                 key={item.src}
-                onClick={item.actionTarget && item.tone !== 'toxic' ? () => scrollTo(item.actionTarget) : undefined}
-                onKeyDown={item.actionTarget && item.tone !== 'toxic' ? (event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    scrollTo(item.actionTarget)
-                  }
-                } : undefined}
-                role={item.actionTarget && item.tone !== 'toxic' ? 'button' : undefined}
-                tabIndex={item.actionTarget && item.tone !== 'toxic' ? 0 : undefined}
                 variants={fadeUp}
                 initial="hidden"
                 animate="show"
@@ -1675,7 +1690,7 @@ function App() {
 
 
         <section id="tours" className="tours-section premium-section">
-          <video className="section-video" src="/assets/vid3.mp4" autoPlay muted loop playsInline />
+          <video aria-hidden="true" className="section-video" src="/assets/vid3.mp4" autoPlay muted loop playsInline />
           <img className="section-backdrop is-left" src="/assets/imag8.jpeg" alt="" aria-hidden="true" />
           <img className="section-backdrop is-right is-upper is-soft" src="/assets/carbon-map-bg.png" alt="" aria-hidden="true" />
           <motion.div className="section-heading reveal" variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.35 }}>
@@ -1740,7 +1755,7 @@ function App() {
                 </div>
               </div>
               <div className="map-stage">
-                <div className={mapReady ? 'map-canvas is-live' : 'map-canvas'} ref={mapRef}>
+                <div aria-label={`${origin} to ${destination} route map`} className={mapReady ? 'map-canvas is-live' : 'map-canvas'} ref={mapRef} role="img">
                   {!mapReady && (
                     <div className="fallback-route">
                       <MapPinned size={34} />
@@ -1788,7 +1803,7 @@ function App() {
         </section>
 
         <section id="diet" className="diet-section scenic-section">
-          <video className="section-video" src="/assets/vid7.mp4" autoPlay muted loop playsInline />
+          <video aria-hidden="true" className="section-video" src="/assets/vid7.mp4" autoPlay muted loop playsInline />
           <img className="section-backdrop is-right is-soft" src="/assets/imag11.jpeg" alt="" aria-hidden="true" />
           <motion.div className="section-heading reveal" variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.35 }}>
             <p className="eyebrow">Live food images</p>
@@ -1829,7 +1844,7 @@ function App() {
             <motion.div className="diet-grid reveal" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.2 }}>
               {visibleDietCards.map((card) => (
                 <motion.article className="diet-card" key={card.name} variants={fadeUp} whileHover={{ y: -6, scale: 1.015 }}>
-                  <img src={card.image} alt={card.name} onError={(event) => { event.currentTarget.src = '/assets/imag5.jpeg' }} />
+                  <img src={card.image} alt={card.name} loading="lazy" decoding="async" onError={(event) => { event.currentTarget.src = '/assets/imag5.jpeg' }} />
                   <div>
                     <div className="food-card-meta">
                       <span>{card.category || 'food'}</span>
@@ -1891,7 +1906,7 @@ function App() {
         </section>
 
         <section className="comparison-section premium-section">
-          <video className="section-video" src="/assets/vid9.mp4" autoPlay muted loop playsInline />
+          <video aria-hidden="true" className="section-video" src="/assets/vid9.mp4" autoPlay muted loop playsInline />
           <img className="section-backdrop is-left is-soft" src="/assets/imag10.jpeg" alt="" aria-hidden="true" />
           <img className="section-backdrop is-right is-tight" src="/assets/category_icons.png" alt="" aria-hidden="true" />
           <motion.div className="comparison-hero" variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.25 }}>
@@ -1925,7 +1940,7 @@ function App() {
             </div>
           </div>
           <motion.div className="comparison-grid reveal" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.18 }}>
-            <motion.div className="breakdown-panel" variants={fadeUp}>
+            <motion.div className="breakdown-panel" variants={fadeUp} role="region" aria-label="Recognized impact items">
               <h3>Items recognized</h3>
               <div className="item-list">
                 {impact.items.map((item) => (
@@ -1936,7 +1951,7 @@ function App() {
                 ))}
               </div>
             </motion.div>
-            <motion.div className="breakdown-panel" variants={fadeUp}>
+            <motion.div className="breakdown-panel" variants={fadeUp} role="region" aria-label="Category split chart">
               <h3>Category split</h3>
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
@@ -1956,7 +1971,7 @@ function App() {
         <section id="pulse" className="pulse-section">
           {sectionReady.pulse ? (
             <>
-              <video className="section-video" src="/assets/vid8.mp4" autoPlay muted loop playsInline />
+              <video aria-hidden="true" className="section-video" src="/assets/vid8.mp4" autoPlay muted loop playsInline />
               <img className="section-backdrop is-left is-soft" src="/assets/imag1.jpeg" alt="" aria-hidden="true" />
               <motion.div className="pulse-hero" variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.25 }}>
                 <div>
@@ -1976,7 +1991,7 @@ function App() {
               ) : (
                 <motion.div className="article-grid reveal" variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.18 }}>
                   {articles.map((article) => (
-                    <motion.a className="article-card" href={article.url} key={article.title} rel="noreferrer" target="_blank" variants={fadeUp} whileHover={{ y: -5 }}>
+                    <motion.a aria-label={`Open article: ${article.title}`} className="article-card" href={article.url} key={article.title} rel="noreferrer" target="_blank" variants={fadeUp} whileHover={{ y: -5 }}>
                       <Newspaper size={22} />
                       <span>{article.source}</span>
                       <h3>{article.title}</h3>
@@ -1992,9 +2007,9 @@ function App() {
         </section>
 
         <section id="mirror" className="mirror-section">
-          <video className="section-video" src="/assets/vid4.mp4" autoPlay muted loop playsInline />
+          <video aria-hidden="true" className="section-video" src="/assets/vid4.mp4" autoPlay muted loop playsInline />
           <img className="section-backdrop is-left is-soft" src="/assets/imag12.jpeg" alt="" aria-hidden="true" />
-          <div className="mirror-art reveal"><img src="/assets/weekly_mirror.png" alt="Weekly carbon mirror visual" /></div>
+          <div className="mirror-art reveal"><img src="/assets/weekly_mirror.png" alt="Weekly carbon mirror visual" loading="lazy" decoding="async" /></div>
           <div className="mirror-copy reveal">
             <p className="eyebrow">Weekly Carbon Mirror</p>
             <h2>No lecture. One swap.</h2>
@@ -2008,7 +2023,7 @@ function App() {
         </section>
 
         <section id="dashboard" className="dashboard-section premium-section">
-          <video className="section-video" src="/assets/vid5.mp4" autoPlay muted loop playsInline />
+          <video aria-hidden="true" className="section-video" src="/assets/vid5.mp4" autoPlay muted loop playsInline />
           <img className="section-backdrop is-right is-soft" src="/assets/loading_animation.png" alt="" aria-hidden="true" />
           {sectionReady.dashboard ? (
             <>
@@ -2053,7 +2068,7 @@ function App() {
                 {!latestFoodLog && <p>No individual meal records yet. Log today’s diet to generate the first report.</p>}
               </div>
             </div>
-            <div className="chart-panel wide dashboard-total-chart">
+            <div className="chart-panel wide dashboard-total-chart" role="region" aria-label="Seven day food CO2e chart">
               <div className="panel-title chart-title-row">
                 <div><History size={20} /><h3>True daily food CO2e</h3></div>
                 <span>{loggedChartDays} logged day{loggedChartDays === 1 ? '' : 's'} in a 7 day view</span>
@@ -2095,7 +2110,7 @@ function App() {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            <div className="chart-panel category-chart-panel">
+            <div className="chart-panel category-chart-panel" role="region" aria-label="Food category CO2e breakdown chart">
               <div className="panel-title"><Globe2 size={20} /><h3>Category breakdown</h3></div>
               <div className="category-legend-pills">
                 {foodReportCategories.map((entry) => (
@@ -2119,7 +2134,7 @@ function App() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="privacy-panel wide">
+            <div className="privacy-panel wide" role="region" aria-label="Anonymous usage analytics chart">
               <div className="panel-title chart-title-row">
                 <div><ShieldCheck size={20} /><h3>Anonymous previous-entry pulse</h3></div>
                 <span>No personal data stored</span>
@@ -2161,7 +2176,7 @@ function App() {
         </section>
 
         <section className="final-cta">
-          <video src="/assets/vid10.mp4" autoPlay muted loop playsInline />
+          <video aria-hidden="true" src="/assets/vid10.mp4" autoPlay muted loop playsInline />
           <div>
             <p className="eyebrow">Demo ready</p>
             <h2>The judge moment is the comparison.</h2>
@@ -2173,7 +2188,7 @@ function App() {
             <Headphones size={22} />
             <strong>Crown of Black soundtrack</strong>
             <p>The site now plays the local `crown_of_black.mp3` loop from your asset bundle instead of the old generated pad.</p>
-            <button className="secondary-action" onClick={isMusicOn ? stopAmbient : startAmbient} type="button">
+            <button aria-pressed={isMusicOn} className="secondary-action" onClick={isMusicOn ? stopAmbient : startAmbient} type="button">
               {isMusicOn ? <Pause size={16} /> : <Music2 size={16} />}
               {isMusicOn ? 'Pause music' : 'Play music'}
             </button>

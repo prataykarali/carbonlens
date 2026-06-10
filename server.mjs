@@ -62,10 +62,37 @@ const mimeTypes = {
   '.svg': 'image/svg+xml',
 }
 
+const securityHeaders = {
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "script-src 'self' 'wasm-unsafe-eval'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://world.openfoodfacts.org https://nominatim.openstreetmap.org https://router.project-osrm.org https://*.tile.openstreetmap.org https://*.openstreetmap.org",
+    "worker-src 'self' blob:",
+  ].join('; '),
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(self), geolocation=(self), microphone=()',
+}
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
 function sendJson(response, body, status = 200) {
   response.writeHead(status, {
+    ...securityHeaders,
+    ...corsHeaders,
     'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
   })
   response.end(JSON.stringify(body))
 }
@@ -135,7 +162,7 @@ function recordUsage({ anonymous_id: anonymousId, event_type: eventType = 'visit
   } else {
     day.entries += 1
     day[safeEvent] += 1
-    day.totalKg += Math.max(0, Number(totalKg) || 0)
+    day.totalKg += Math.min(100000, Math.max(0, Number(totalKg) || 0))
   }
 
   usageState.days.set(today, day)
@@ -143,20 +170,32 @@ function recordUsage({ anonymous_id: anonymousId, event_type: eventType = 'visit
 }
 
 function pickFoodImage(query) {
-  const lowered = query.toLowerCase()
+  const lowered = query.toLowerCase().slice(0, 80)
   const key = Object.keys(imageFallbacks).find((entry) => lowered.includes(entry))
   return imageFallbacks[key] || '/assets/imag5.jpeg'
 }
 
+function cacheControlFor(filePath) {
+  if (extname(filePath) === '.html') return 'no-store'
+  if (filePath.includes('/assets/')) return 'public, max-age=31536000, immutable'
+  return 'public, max-age=3600'
+}
+
 async function serveFile(response, filePath) {
   if (!existsSync(filePath)) {
-    response.writeHead(404)
+    response.writeHead(404, {
+      ...securityHeaders,
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store',
+    })
     response.end('Not found')
     return
   }
 
   response.writeHead(200, {
+    ...securityHeaders,
     'Content-Type': mimeTypes[extname(filePath)] || 'application/octet-stream',
+    'Cache-Control': cacheControlFor(filePath),
   })
   createReadStream(filePath).pipe(response)
 }
@@ -166,9 +205,8 @@ const server = http.createServer(async (request, response) => {
 
   if (request.method === 'OPTIONS') {
     response.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      ...securityHeaders,
+      ...corsHeaders,
     })
     response.end()
     return
@@ -203,7 +241,9 @@ const server = http.createServer(async (request, response) => {
     return
   }
 
-  const safePath = normalize(decodeURIComponent(requestUrl.pathname)).replace(/^(\.\.[/\\])+/, '')
+  const safePath = normalize(decodeURIComponent(requestUrl.pathname))
+    .replace(/^(\.\.([/\\]|$))+/, '')
+    .replace(/^[/\\]+/, '/')
   const staticPath = safePath === '/' ? '/index.html' : safePath
   const filePath = join(distDir, staticPath)
 
@@ -212,7 +252,11 @@ const server = http.createServer(async (request, response) => {
     return
   }
 
-  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+  response.writeHead(200, {
+    ...securityHeaders,
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store',
+  })
   response.end(await readFile(join(distDir, 'index.html'), 'utf8'))
 })
 

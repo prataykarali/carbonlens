@@ -93,12 +93,13 @@ The frontend reads `VITE_BACKEND_URL=http://127.0.0.1:8001` when you want backen
 Create `.env.local` for local secrets. It is ignored by Git.
 
 ```bash
-VITE_GEMINI_API_KEY=...
-VITE_GROQ_API_KEY=...
 VITE_BACKEND_URL=http://127.0.0.1:8001
-GOOGLE_MAPS_API_KEY=...
-VITE_GOOGLE_MAPS_API_KEY=...
+GEMINI_API_KEY=...
+GROQ_API_KEY=...
+CARBONLENS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
 ```
+
+Do not expose AI provider secrets with `VITE_*` variables. Frontend builds can reveal those values in browser JavaScript, so production AI calls should go through the backend.
 
 Maps are free/open by default:
 
@@ -158,5 +159,10 @@ public/assets/              Local videos, images, Rive files, and audio
 ## Build Check
 
 ```bash
+npm test
+npm run test:python
 npm run build
+npm run check
 ```
+
+`npm run check` runs linting, the Node test suite, and the production build in sequence. `npm run test:python` exercises the optional FastAPI usage aggregation when backend dependencies are installed.

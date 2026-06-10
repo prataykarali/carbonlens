@@ -1,9 +1,12 @@
-import { buildImpact, demoReceiptItems, estimateItemImpact, parseQuantity, pickAnchor } from '../data/carbon'
+import { buildImpact, demoReceiptItems, estimateItemImpact, parseQuantity, pickAnchor } from '../data/carbon.js'
 
-const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash'
-const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct'
+const env = import.meta.env || {}
+const GEMINI_KEY = ''
+const GROQ_KEY = ''
+const GEMINI_MODEL = env.VITE_GEMINI_MODEL || 'gemini-2.0-flash'
+const GROQ_MODEL = env.VITE_GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct'
+const MAX_PROMPT_CHARS = 2000
+const MAX_DATA_URL_CHARS = 6_000_000
 
 const receiptPrompt = `
 Extract purchasable line items from this receipt image.
@@ -14,11 +17,20 @@ Use units item, kg, litre, km, or hour. Ignore prices, taxes, totals, store meta
 
 const manualPrompt = (text) => `
 Parse this carbon-relevant natural language input into item rows:
-"${text}"
+"${sanitizePromptText(text)}"
 Return only valid JSON as:
 {"items":[{"name":"item name","quantity":1,"unit":"item"}]}
 Use units item, kg, litre, km, or hour.
 `
+
+export function sanitizePromptText(text = '') {
+  return String(text)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[{}[\]<>]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_PROMPT_CHARS)
+}
 
 function extractJson(text) {
   if (!text) return null
@@ -36,6 +48,9 @@ function extractJson(text) {
 }
 
 async function dataUrlToGeminiPart(dataUrl) {
+  if (!dataUrl || dataUrl.length > MAX_DATA_URL_CHARS) {
+    throw new Error('Receipt image is missing or too large')
+  }
   const [meta, payload] = dataUrl.split(',')
   const mimeType = meta.match(/data:(.*?);base64/)?.[1] || 'image/jpeg'
   return { inlineData: { mimeType, data: payload } }
@@ -84,7 +99,8 @@ async function callGroq(messages) {
 }
 
 function parseManualFallback(text) {
-  const chunks = text
+  const safeText = sanitizePromptText(text)
+  const chunks = safeText
     .split(/,|\n| and /i)
     .map((chunk) => chunk.trim())
     .filter(Boolean)
@@ -99,7 +115,7 @@ function parseManualFallback(text) {
     }
   })
 
-  return items.length ? items : [{ name: text || 'mixed purchase', quantity: 1, unit: 'item' }]
+  return items.length ? items : [{ name: safeText || 'mixed purchase', quantity: 1, unit: 'item' }]
 }
 
 export async function parseReceiptImage(dataUrl) {
@@ -132,8 +148,9 @@ export async function parseReceiptImage(dataUrl) {
 }
 
 export async function parseManualInput(text) {
+  const safeText = sanitizePromptText(text)
   try {
-    const response = await callGemini([{ text: manualPrompt(text) }])
+    const response = await callGemini([{ text: manualPrompt(safeText) }])
     const parsed = extractJson(response)
     if (parsed?.items?.length) return parsed.items
   } catch (error) {
@@ -141,18 +158,21 @@ export async function parseManualInput(text) {
   }
 
   try {
-    const response = await callGroq([{ role: 'user', content: manualPrompt(text) }])
+    const response = await callGroq([{ role: 'user', content: manualPrompt(safeText) }])
     const parsed = extractJson(response)
     if (parsed?.items?.length) return parsed.items
   } catch (error) {
     console.info('Groq manual parse fallback:', error.message)
   }
 
-  return parseManualFallback(text)
+  return parseManualFallback(safeText)
 }
 
 export async function lookupBarcode(code) {
-  const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`)
+  const safeCode = String(code).replace(/\D/g, '').slice(0, 32)
+  if (!safeCode) throw new Error('Barcode is required')
+
+  const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${safeCode}.json`)
   if (!response.ok) throw new Error('Open Food Facts lookup failed')
   const data = await response.json()
   if (!data.product) throw new Error('Product not found')
@@ -167,9 +187,9 @@ export async function lookupBarcode(code) {
     .filter(Boolean)
     .join(' ')
 
-  const impact = estimateItemImpact({ name: categories || `barcode ${code}`, quantity: 1, unit: 'item' })
+  const impact = estimateItemImpact({ name: categories || `barcode ${safeCode}`, quantity: 1, unit: 'item' })
   return {
-    code,
+    code: safeCode,
     name: product.product_name || product.generic_name || `Barcode ${code}`,
     brand: product.brands || 'Open Food Facts',
     category: product.compared_to_category || product.categories_tags?.[0] || 'packaged food',
