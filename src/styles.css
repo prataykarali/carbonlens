@@ -2699,6 +2699,53 @@ textarea:focus {
   line-height: 1.5;
 }
 
+.proof-ledger {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(280px, 1.05fr);
+  gap: 14px;
+  align-items: start;
+  border: 1px solid rgba(139, 215, 255, 0.24);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(139, 215, 255, 0.07);
+}
+
+.proof-ledger span,
+.proof-ledger dt {
+  color: rgba(156, 255, 221, 0.8);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.proof-ledger strong {
+  display: block;
+  margin: 5px 0 6px;
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.proof-ledger dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.proof-ledger dl div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.proof-ledger dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #f7fff9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
 .insight-panel {
   display: grid;
   gap: 18px;
@@ -2873,6 +2920,7 @@ textarea:focus {
   .route-intel,
   .insight-metrics,
   .privacy-metric-grid,
+  .proof-ledger,
   .daily-diet-panel,
   .budget-panel {
     grid-template-columns: 1fr;

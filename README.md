@@ -73,6 +73,7 @@ The challenge problem asks for awareness through simple actions and personalized
 - **Product data:** Open Food Facts barcode lookup with sanitized numeric barcodes.
 - **Backend:** FastAPI for health, food images, articles, and privacy-safe aggregate usage analytics.
 - **Space runtime:** Docker plus `server.mjs`, serving the built app on port `7860` with API fallbacks.
+- **Optional proof layer:** SHA-256 impact proof generation with Cairo/Starknet-compatible calldata and a reference contract in `contracts/`.
 - **Testing:** Node test runner for frontend/domain logic and Python `unittest` for backend analytics.
 
 ## Evaluation Readiness
@@ -82,6 +83,7 @@ The challenge problem asks for awareness through simple actions and personalized
 - **Efficiency:** route calculations reuse pure helpers, scraper responses are cached, static Space assets receive long-lived cache headers, and non-critical images use lazy loading/async decoding.
 - **Testing:** `npm run check` runs ESLint, all Node tests, all Python usage tests, and the production build.
 - **Accessibility:** zoom is not blocked, a skip link is present, form fields have labels, interactive mode controls expose selected state, decorative media is hidden from assistive tech, charts/maps are labelled regions, and live status updates use `aria-live`.
+- **Proof/audit readiness:** dashboard results can be converted into a Cairo-ready proof ID and category fingerprint without putting raw user inputs on-chain.
 
 ## Privacy Model
 
@@ -178,11 +180,14 @@ src/styles.css              Responsive app styling
 src/data/carbon.js          Carbon factors and comparison anchors
 src/services/aiClients.js   Local-safe parsing, receipt validation, barcode lookup, and comparison phrasing
 src/services/inputSafety.js Upload validation helpers
+src/services/impactProof.js  Cairo-ready impact proof generation
 src/services/routeMath.js   Pure route parsing, distance, and impact helpers
 src/services/backendApi.js  Backend, image, article, and usage API helpers
 src/services/maps.js        Leaflet/OpenStreetMap/OSRM route logic
 backend/usage.py            Privacy-safe aggregate analytics logic
 backend/main.py             Optional FastAPI API
+contracts/                  Optional Starknet/Cairo impact proof reference
+docs/IMPACT_PROOF.md        Privacy-preserving proof design
 server.mjs                  Static Space server with API fallbacks
 public/assets/              Local videos, images, Rive files, and audio
 ```

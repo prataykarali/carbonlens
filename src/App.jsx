@@ -63,6 +63,7 @@ import {
 import { categoryColors, estimateItemImpact, parseQuantity, pickAnchor } from './data/carbon'
 import { lookupBarcode, makeImpactFromItems, parseManualInput, parseReceiptImage, phraseComparison } from './services/aiClients'
 import { fetchArticles, fetchFoodImage, recordUsageEvent } from './services/backendApi'
+import { createImpactProof } from './services/impactProof'
 import { validateReceiptFileMeta } from './services/inputSafety'
 import { calculateRouteImpact, estimateRouteDistance, renderOpenRouteMap } from './services/maps'
 
@@ -729,6 +730,7 @@ function App() {
   const [carbonBudget, setCarbonBudget] = useState(3)
   const [privacyMetrics, setPrivacyMetrics] = useState(readPrivacyMetrics)
   const [remoteUsage, setRemoteUsage] = useState(null)
+  const [impactProof, setImpactProof] = useState(null)
   const [sectionReady, setSectionReady] = useState({
     summary: false,
     scan: false,
@@ -784,6 +786,21 @@ function App() {
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify({ city: session.city, history: session.history, foodLogs: session.foodLogs, returning: true }))
   }, [session])
+
+  useEffect(() => {
+    let cancelled = false
+    createImpactProof({ impact, source: 'carbonlens-dashboard' })
+      .then((proof) => {
+        if (!cancelled) setImpactProof(proof)
+      })
+      .catch(() => {
+        if (!cancelled) setImpactProof(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [impact])
 
   useEffect(() => {
     localStorage.setItem(
@@ -2155,6 +2172,20 @@ function App() {
                 </ComposedChart>
               </ResponsiveContainer>
               <p>This graph is built from previous saved entries and visits only. CarbonLens keeps a random browser ID, dates, event counts, and CO2e totals; it never stores names, typed meals, receipt text, barcode values, camera images, or route locations in usage analytics.</p>
+              {impactProof && (
+                <div className="proof-ledger" role="region" aria-label="Cairo ready impact proof">
+                  <div>
+                    <span>Optional Starknet proof</span>
+                    <strong>Cairo-ready impact receipt</strong>
+                    <p>Hash the result locally, then anchor only the proof ID, total grams, category fingerprint, and timestamp.</p>
+                  </div>
+                  <dl>
+                    <div><dt>Proof ID</dt><dd>{impactProof.proof_felt.slice(0, 18)}...</dd></div>
+                    <div><dt>Total</dt><dd>{impactProof.total_grams_co2e.toLocaleString('en-IN')} g CO2e</dd></div>
+                    <div><dt>Fingerprint</dt><dd>{impactProof.category_fingerprint_felt.slice(0, 18)}...</dd></div>
+                  </dl>
+                </div>
+              )}
             </div>
                 <div className="insight-panel">
                   <div>
