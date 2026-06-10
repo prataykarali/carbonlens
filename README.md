@@ -182,9 +182,10 @@ The Space server includes browser-side fallbacks for food images and articles, p
 
 ```text
 src/App.jsx                 Main immersive React experience
+src/components/             Focused dashboard and proof panel components
 src/styles.css              Responsive app styling
 src/data/carbon.js          Carbon factors and comparison anchors
-src/services/aiClients.js   Local-safe parsing, receipt validation, barcode lookup, and comparison phrasing
+src/services/inputParsers.js Local-safe parsing, receipt validation, barcode lookup, and comparison phrasing
 src/services/inputSafety.js Upload validation helpers
 src/services/impactProof.js  Cairo-ready impact proof generation
 src/services/reductionPlan.js Personalized 3-day action planning

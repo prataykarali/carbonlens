@@ -60,8 +60,10 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
+import { ImpactProofPanel } from './components/ImpactProofPanel'
+import { ReductionPlanPanel } from './components/ReductionPlanPanel'
 import { categoryColors, estimateItemImpact, parseQuantity, pickAnchor } from './data/carbon'
-import { lookupBarcode, makeImpactFromItems, parseManualInput, parseReceiptImage, phraseComparison } from './services/aiClients'
+import { lookupBarcode, makeImpactFromItems, parseManualInput, parseReceiptImage, phraseComparison } from './services/inputParsers'
 import { fetchArticles, fetchFoodImage, recordUsageEvent } from './services/backendApi'
 import { createImpactProof } from './services/impactProof'
 import { validateReceiptFileMeta } from './services/inputSafety'
@@ -2090,33 +2092,7 @@ function App() {
                 {!latestFoodLog && <p>No individual meal records yet. Log today’s diet to generate the first report.</p>}
               </div>
             </div>
-            <div className="reduction-plan-panel wide" role="region" aria-label="Personalized carbon reduction plan">
-              <div className="panel-title chart-title-row">
-                <div><Leaf size={20} /><h3>Personal 3-day reduction plan</h3></div>
-                <span>{formatKg(reductionPlan.projectedWeekSavings)} kg potential weekly saving</span>
-              </div>
-              <div className="plan-hero-row">
-                <div>
-                  <span>{reductionPlan.challenge}</span>
-                  <strong>{reductionPlan.headline}</strong>
-                  <p>{reductionPlan.cityContext}</p>
-                </div>
-                <div>
-                  <span>Target gap</span>
-                  <strong>{formatKg(reductionPlan.dailyGap)} kg/day</strong>
-                  <p>{reductionPlan.weeklyAverage ? `${formatKg(reductionPlan.weeklyAverage)} kg recent average vs ${formatKg(carbonBudget)} kg target.` : 'Log entries to compare against your own baseline.'}</p>
-                </div>
-              </div>
-              <div className="plan-action-grid">
-                {reductionPlan.actions.map((action) => (
-                  <article key={action.label}>
-                    <span>{action.label}</span>
-                    <strong>{action.title}</strong>
-                    <p>{action.detail}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
+            <ReductionPlanPanel carbonBudget={carbonBudget} formatKg={formatKg} reductionPlan={reductionPlan} />
             <div className="chart-panel wide dashboard-total-chart" role="region" aria-label="Seven day food CO2e chart">
               <div className="panel-title chart-title-row">
                 <div><History size={20} /><h3>True daily food CO2e</h3></div>
@@ -2204,20 +2180,7 @@ function App() {
                 </ComposedChart>
               </ResponsiveContainer>
               <p>This graph is built from previous saved entries and visits only. CarbonLens keeps a random browser ID, dates, event counts, and CO2e totals; it never stores names, typed meals, receipt text, barcode values, camera images, or route locations in usage analytics.</p>
-              {impactProof && (
-                <div className="proof-ledger" role="region" aria-label="Cairo ready impact proof">
-                  <div>
-                    <span>Optional Starknet proof</span>
-                    <strong>Cairo-ready impact receipt</strong>
-                    <p>Hash the result locally, then anchor only the proof ID, total grams, category fingerprint, and timestamp.</p>
-                  </div>
-                  <dl>
-                    <div><dt>Proof ID</dt><dd>{impactProof.proof_felt.slice(0, 18)}...</dd></div>
-                    <div><dt>Total</dt><dd>{impactProof.total_grams_co2e.toLocaleString('en-IN')} g CO2e</dd></div>
-                    <div><dt>Fingerprint</dt><dd>{impactProof.category_fingerprint_felt.slice(0, 18)}...</dd></div>
-                  </dl>
-                </div>
-              )}
+              <ImpactProofPanel impactProof={impactProof} />
             </div>
                 <div className="insight-panel">
                   <div>
