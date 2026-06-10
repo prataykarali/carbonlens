@@ -50,20 +50,23 @@ import {
   RefreshCw,
   Route,
   ScanLine,
+  ShieldCheck,
   Snowflake,
   Sparkles,
   Target,
   Train,
   Utensils,
   Upload,
+  Users,
   Zap,
 } from 'lucide-react'
 import { categoryColors, estimateItemImpact, parseQuantity, pickAnchor } from './data/carbon'
 import { lookupBarcode, makeImpactFromItems, parseManualInput, parseReceiptImage, phraseComparison } from './services/aiClients'
-import { fetchArticles, fetchFoodImage } from './services/backendApi'
+import { fetchArticles, fetchFoodImage, recordUsageEvent } from './services/backendApi'
 import { calculateRouteImpact, estimateRouteDistance, renderOpenRouteMap } from './services/maps'
 
 const storageKey = 'carbonlens-session-v2'
+const analyticsKey = 'carbonlens-privacy-metrics-v1'
 const scannerTabs = [
   { id: 'receipt', label: 'Receipt', icon: FileImage },
   { id: 'barcode', label: 'Barcode', icon: Barcode },
@@ -253,8 +256,10 @@ function formatShortDate(dateKey) {
 }
 
 function makeHistoryRow(impact) {
+  const now = new Date()
   return {
-    date: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
+    date: formatDateKey(now),
+    label: now.toLocaleDateString('en-US', { weekday: 'short' }),
     total: impact.totalKg,
     ...impact.byCategory,
   }
@@ -385,6 +390,110 @@ function buildReportTimeline(rows, days = 7) {
   })
 }
 
+function makeAnonymousId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID()
+  return `anon-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function readPrivacyMetrics() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(analyticsKey))
+    return {
+      anonymousId: saved?.anonymousId || makeAnonymousId(),
+      firstSeen: saved?.firstSeen || new Date().toISOString(),
+      visits: Number(saved?.visits) || 0,
+      entries: Number(saved?.entries) || 0,
+      days: Array.isArray(saved?.days) ? saved.days : [],
+    }
+  } catch {
+    return {
+      anonymousId: makeAnonymousId(),
+      firstSeen: new Date().toISOString(),
+      visits: 0,
+      entries: 0,
+      days: [],
+    }
+  }
+}
+
+function classifyUsageEvent(sourceLabel = '') {
+  const normalized = sourceLabel.toLowerCase()
+  if (normalized.includes('route')) return 'routes'
+  if (normalized.includes('diet') || normalized.includes('food')) return 'diets'
+  return 'scans'
+}
+
+function recordLocalUsage(current, eventType = 'visit', totalKg = 0) {
+  const today = formatDateKey()
+  const safeTotal = Number.isFinite(totalKg) ? Math.max(0, totalKg) : 0
+  const existingDay = current.days.find((day) => day.date === today)
+  const nextDay = {
+    date: today,
+    label: formatShortDate(today),
+    visits: existingDay?.visits || 0,
+    entries: existingDay?.entries || 0,
+    scans: existingDay?.scans || 0,
+    routes: existingDay?.routes || 0,
+    diets: existingDay?.diets || 0,
+    totalKg: existingDay?.totalKg || 0,
+  }
+
+  if (eventType === 'visit') {
+    nextDay.visits += 1
+  } else {
+    nextDay.entries += 1
+    nextDay[eventType] = (nextDay[eventType] || 0) + 1
+    nextDay.totalKg = Number((nextDay.totalKg + safeTotal).toFixed(2))
+  }
+
+  return {
+    ...current,
+    visits: current.visits + (eventType === 'visit' ? 1 : 0),
+    entries: current.entries + (eventType === 'visit' ? 0 : 1),
+    days: [...current.days.filter((day) => day.date !== today), nextDay]
+      .sort((left, right) => left.date.localeCompare(right.date))
+      .slice(-30),
+  }
+}
+
+function buildUsageTimeline(days = [], length = 7) {
+  const byDate = new Map(
+    days.map((day) => [
+      day.date,
+      {
+        date: day.date,
+        label: day.label || formatShortDate(day.date),
+        visits: Number(day.visits) || 0,
+        entries: Number(day.entries) || 0,
+        scans: Number(day.scans) || 0,
+        routes: Number(day.routes) || 0,
+        diets: Number(day.diets) || 0,
+        uniqueUsers: Number(day.unique_users || day.uniqueUsers) || 0,
+        totalKg: Number(day.total_kg ?? day.totalKg) || 0,
+      },
+    ]),
+  )
+  const today = new Date()
+
+  return Array.from({ length }, (_, index) => {
+    const date = new Date(today)
+    date.setDate(today.getDate() - (length - 1 - index))
+    const key = formatDateKey(date)
+    const existing = byDate.get(key)
+    return {
+      date: key,
+      label: formatShortDate(key),
+      visits: existing?.visits || 0,
+      entries: existing?.entries || 0,
+      scans: existing?.scans || 0,
+      routes: existing?.routes || 0,
+      diets: existing?.diets || 0,
+      uniqueUsers: existing?.uniqueUsers || (existing?.visits || existing?.entries ? 1 : 0),
+      totalKg: Number((existing?.totalKg || 0).toFixed(2)),
+    }
+  })
+}
+
 function FoodTimelineTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload
@@ -404,6 +513,20 @@ function FoodTimelineTooltip({ active, payload, label }) {
           <small>Log a meal day to turn this placeholder into a real report bar.</small>
         </>
       )}
+    </div>
+  )
+}
+
+function UsageTimelineTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload
+  if (!row) return null
+
+  return (
+    <div className="chart-tooltip">
+      <strong>{label}</strong>
+      <span>{row.entries} saved action{row.entries === 1 ? '' : 's'}</span>
+      <small>{row.visits} visit{row.visits === 1 ? '' : 's'} · {formatKg(row.totalKg)} kg analyzed</small>
     </div>
   )
 }
@@ -603,6 +726,8 @@ function App() {
   const [isMusicOn, setIsMusicOn] = useState(false)
   const [dietPlan, setDietPlan] = useState(defaultDietPlan)
   const [carbonBudget, setCarbonBudget] = useState(3)
+  const [privacyMetrics, setPrivacyMetrics] = useState(readPrivacyMetrics)
+  const [remoteUsage, setRemoteUsage] = useState(null)
   const [sectionReady, setSectionReady] = useState({
     summary: false,
     scan: false,
@@ -638,10 +763,37 @@ function App() {
   const mapRef = useRef(null)
   const openRouteRef = useRef(null)
   const audioRef = useRef(null)
+  const didTrackVisitRef = useRef(false)
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify({ city: session.city, history: session.history, foodLogs: session.foodLogs, returning: true }))
   }, [session])
+
+  useEffect(() => {
+    localStorage.setItem(
+      analyticsKey,
+      JSON.stringify({
+        anonymousId: privacyMetrics.anonymousId,
+        firstSeen: privacyMetrics.firstSeen,
+        visits: privacyMetrics.visits,
+        entries: privacyMetrics.entries,
+        days: privacyMetrics.days,
+      }),
+    )
+  }, [privacyMetrics])
+
+  useEffect(() => {
+    if (didTrackVisitRef.current) return
+    didTrackVisitRef.current = true
+
+    setPrivacyMetrics((current) => {
+      const next = recordLocalUsage(current, 'visit')
+      recordUsageEvent({ anonymousId: next.anonymousId, eventType: 'visit' }).then((usage) => {
+        if (usage) setRemoteUsage(usage)
+      })
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     const cleanup = () => {
@@ -812,6 +964,14 @@ function App() {
   const topTrackedMeal = [...(latestFoodDay?.meals || [])].sort((left, right) => right.kg - left.kg)[0]
   const chartWindow = useMemo(() => buildReportTimeline(dailyFoodSeries.length ? dailyFoodSeries : reportSeries, 7), [dailyFoodSeries, reportSeries])
   const loggedChartDays = chartWindow.filter((row) => row.hasLog).length
+  const usageSourceDays = remoteUsage?.days?.length ? remoteUsage.days : privacyMetrics.days
+  const privacyTimeline = useMemo(() => buildUsageTimeline(usageSourceDays, 7), [usageSourceDays])
+  const uniqueBrowserCount = remoteUsage?.unique_users || (privacyMetrics.visits ? 1 : 0)
+  const privacyEntryCount = Math.max(privacyMetrics.entries, session.history.length)
+  const activeUsageDays = new Set([
+    ...privacyMetrics.days.filter((day) => day.visits || day.entries).map((day) => day.date),
+    ...(session.foodLogs || []).map((log) => log.date),
+  ]).size
   const categorySourceSeries = dailyFoodSeries.length ? dailyFoodSeries : reportSeries
   const foodReportCategories = ['food', 'transport', 'energy', 'shopping']
     .map((category) => ({
@@ -882,6 +1042,16 @@ function App() {
     }
   }, [session.history])
 
+  function queueUsageEvent(eventType, totalKg = 0) {
+    setPrivacyMetrics((current) => {
+      const next = recordLocalUsage(current, eventType, totalKg)
+      recordUsageEvent({ anonymousId: next.anonymousId, eventType, totalKg }).then((usage) => {
+        if (usage) setRemoteUsage(usage)
+      })
+      return next
+    })
+  }
+
   async function commitImpact(nextImpact, { sourceLabel, refreshCards = true, finalStatus } = {}) {
     setImpact(nextImpact)
     if (refreshCards) await refreshFoodCards(nextImpact.items)
@@ -894,6 +1064,7 @@ function App() {
     })
     setComparison(phrased)
     setSession((current) => ({ ...current, history: [...current.history.slice(-13), makeHistoryRow(nextImpact)], returning: true }))
+    queueUsageEvent(classifyUsageEvent(sourceLabel), nextImpact.totalKg)
     setStatus(finalStatus || `${sourceLabel} analyzed. Impact saved locally.`)
   }
 
@@ -1251,8 +1422,8 @@ function App() {
       <motion.div className="scroll-progress" style={{ scaleX }} />
       <header className="topbar glass">
         <button className="brand" onClick={() => scrollTo('home')} type="button">
-          <span className="brand-mark"><Leaf size={20} /></span>
-          CarbonLens
+          <span className="brand-mark"><img src="/favicon.svg?v=3" alt="" aria-hidden="true" /></span>
+          <span>CarbonLens</span>
         </button>
         <nav className="topnav" aria-label="Primary navigation">
           {navItems.map((item) => (
@@ -1829,7 +2000,7 @@ function App() {
             <h2>No lecture. One swap.</h2>
             <div className="mirror-stats">
               <div><span>Daily average</span><strong>{formatKg(weeklyMirror.average)} kg</strong></div>
-              <div><span>Personal best</span><strong>{weeklyMirror.best.date}: {formatKg(weeklyMirror.best.total)} kg</strong></div>
+              <div><span>Personal best</span><strong>{weeklyMirror.best.label || weeklyMirror.best.date}: {formatKg(weeklyMirror.best.total)} kg</strong></div>
               <div><span>Largest lever</span><strong>{weeklyMirror.topCategory.category}</strong></div>
             </div>
             <p className="swap-line">{weeklyMirror.suggestion}</p>
@@ -1947,6 +2118,28 @@ function App() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+            <div className="privacy-panel wide">
+              <div className="panel-title chart-title-row">
+                <div><ShieldCheck size={20} /><h3>Anonymous previous-entry pulse</h3></div>
+                <span>No personal data stored</span>
+              </div>
+              <div className="privacy-metric-grid">
+                <div><Users size={18} /><span>Unique browsers</span><strong>{uniqueBrowserCount}</strong></div>
+                <div><History size={18} /><span>Saved actions</span><strong>{privacyEntryCount}</strong></div>
+                <div><Target size={18} /><span>Active days</span><strong>{activeUsageDays}</strong></div>
+              </div>
+              <ResponsiveContainer width="100%" height={260}>
+                <ComposedChart data={privacyTimeline} margin={{ top: 12, right: 18, bottom: 4, left: 0 }}>
+                  <CartesianGrid stroke="rgba(216, 222, 215, 0.14)" vertical={false} />
+                  <XAxis axisLine={false} dataKey="label" tick={{ fill: 'rgba(247, 255, 249, 0.72)', fontSize: 12, fontWeight: 700 }} tickLine={false} />
+                  <YAxis axisLine={false} allowDecimals={false} tick={{ fill: 'rgba(247, 255, 249, 0.62)', fontSize: 12 }} tickLine={false} width={34} />
+                  <Tooltip content={<UsageTimelineTooltip />} cursor={{ fill: 'rgba(125, 255, 210, 0.08)' }} />
+                  <Bar barSize={36} dataKey="entries" fill="#59d9a4" name="saved actions" radius={[8, 8, 0, 0]} />
+                  <Line activeDot={{ r: 5, stroke: '#f7fff9', strokeWidth: 2 }} dataKey="visits" dot={false} name="visits" stroke="#8bd7ff" strokeWidth={3} type="monotone" />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <p>This graph is built from previous saved entries and visits only. CarbonLens keeps a random browser ID, dates, event counts, and CO2e totals; it never stores names, typed meals, receipt text, barcode values, camera images, or route locations in usage analytics.</p>
             </div>
                 <div className="insight-panel">
                   <div>

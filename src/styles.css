@@ -147,12 +147,19 @@ h3 {
 
 .brand-mark {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
-  background: rgba(20, 184, 123, 0.16);
+  overflow: hidden;
+  border: 1px solid rgba(184, 255, 226, 0.24);
+  border-radius: 10px;
+  background: #07120f;
+  box-shadow: 0 12px 28px rgba(20, 184, 123, 0.22);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
 }
 
 .topnav {
@@ -2408,7 +2415,8 @@ textarea:focus {
 
 .chart-panel.wide,
 .budget-panel.wide,
-.food-report-panel.wide {
+.food-report-panel.wide,
+.privacy-panel.wide {
   grid-column: span 2;
 }
 
@@ -2618,6 +2626,60 @@ textarea:focus {
   line-height: 1.1;
 }
 
+.privacy-panel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(125, 255, 210, 0.16);
+  border-radius: 8px;
+  padding: clamp(16px, 2vw, 22px);
+  background:
+    linear-gradient(135deg, rgba(20, 184, 123, 0.11), rgba(10, 20, 17, 0.78)),
+    rgba(9, 18, 15, 0.76);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.privacy-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.privacy-metric-grid div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 10px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.privacy-metric-grid svg {
+  color: #9ee6c8;
+}
+
+.privacy-metric-grid span {
+  color: rgba(156, 255, 221, 0.78);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.privacy-metric-grid strong {
+  grid-column: 1 / -1;
+  color: #fff;
+  font-size: clamp(1.3rem, 2vw, 2rem);
+  line-height: 1.05;
+}
+
+.privacy-panel p {
+  margin: 0;
+  color: rgba(247, 255, 249, 0.72);
+  line-height: 1.5;
+}
+
 .insight-panel {
   display: grid;
   gap: 18px;
@@ -2773,7 +2835,8 @@ textarea:focus {
   }
 
   .chart-panel.wide,
-  .food-report-panel.wide {
+  .food-report-panel.wide,
+  .privacy-panel.wide {
     grid-column: auto;
   }
 
@@ -2790,6 +2853,7 @@ textarea:focus {
   .route-stats,
   .route-intel,
   .insight-metrics,
+  .privacy-metric-grid,
   .daily-diet-panel,
   .budget-panel {
     grid-template-columns: 1fr;

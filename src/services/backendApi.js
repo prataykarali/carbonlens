@@ -59,6 +59,27 @@ export async function fetchArticles() {
   }
 }
 
+export async function recordUsageEvent({ anonymousId, eventType = 'visit', totalKg = 0 }) {
+  if (!anonymousId) return null
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/usage-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        anonymous_id: anonymousId,
+        event_type: eventType,
+        total_kg: Number.isFinite(totalKg) ? totalKg : 0,
+      }),
+    })
+
+    if (!response.ok) throw new Error(`Backend error ${response.status}`)
+    return response.json()
+  } catch {
+    return null
+  }
+}
+
 export async function checkBackend() {
   try {
     return await getJson('/api/health')
